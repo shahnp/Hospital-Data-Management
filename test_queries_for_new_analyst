@@ -1,0 +1,160 @@
+USE XYZ_Hospital For Training new Analyst;
+
+/* Total visits between different consultants and different patients*/ 
+
+SELECT 		s.StaffNo AS 'Consultant Number',
+			CONCAT(s.lname,' ',s.fname) AS 'Consultant Name',
+			p.PatientNo AS 'Patient Number',
+            CONCAT(p.lname,' ',p.fname) AS 'Patient Name',
+			COUNT(*) AS 'Total Visits'
+FROM 		Consultant AS c
+INNER JOIN 	Staff as s
+on 			s.StaffNo = c.StaffNo
+INNER JOIN 	Patient as p
+on 			c.PatientNo = p.PatientNo
+Group BY	s.staffNo, c.StaffNo;
+
+
+/* Q1 cost of each Private patient */	
+
+SELECT  	p.PatientNo AS 'Patient Number',
+			CONCAT(p.lname,' ',p.fname) AS 'Name',
+			w.MedStatus AS 'Medical Insurance Status',			
+            (DATEDIFF ( p.DateDischarged , p.DateAdmitted))* c.PrivateCost AS 'Total cost of staying in the hospital'
+From 		Charges AS c
+INNER JOIN  Patient AS p
+ON 		    c.PatientNo = p.PatientNo
+INNER JOIN  Ward AS w
+ON			w.WardNo = p.WardNo
+WHERE 		w.MedStatus = 'Private';
+    
+/* Q1 cost of each Public patient */	
+
+SELECT  	p.PatientNo AS 'Patient Number',
+			CONCAT(p.fname,' ',p.lname) AS 'Name',
+			w.MedStatus AS 'Medical Insurance Status',			
+            (DATEDIFF ( p.DateDischarged , p.DateAdmitted))* c.PublicCost AS 'Total cost of staying in the hospital'
+From 		Charges AS c
+INNER JOIN  Patient AS p
+ON 		    c.PatientNo = p.PatientNo
+INNER JOIN  Ward AS w
+ON			w.WardNo = p.WardNo
+WHERE 		w.MedStatus = 'Public';    
+
+
+/* Total cost of all Private patients  */
+
+SELECT  	p.PatientNo AS 'Patient Number',
+			CONCAT(p.lname,' ',p.fname) AS 'Name',
+			w.MedStatus AS 'Medical Insurance Status',
+			((DATEDIFF ( p.DateDischarged , p.DateAdmitted))* c.PrivateCost) AS 'Total night cost',
+            (Sum(m.MedCost)) AS 'Total Cost of Medicine',
+            (SUM(s.Fee)) AS 'Total Consultant fees',
+            ((DATEDIFF ( p.DateDischarged , p.DateAdmitted))* c.PrivateCost) + Sum(m.MedCost) + SUM(s.fee) AS 'Total cost of staying in the hospital'
+From 		Patient AS p
+INNER JOIN  Charges AS c
+ON 		    p.PatientNo = c.PatientNo
+INNER JOIN  Medicine AS m
+ON 			c.PatientNo = m.PatientNo
+INNER JOIN	Consultant AS s
+ON			m.PatientNo = s.PatientNo
+INNER JOIN  Ward AS w
+ON			w.WardNo = p.WardNo
+WHERE 		w.MedStatus = 'Private'
+GROUP BY 	p.PatientNo, c.PatientNo, m.PatientNo, s.PatientNo;
+
+
+/* Total costs of all Public patients */
+
+SELECT  	p.PatientNo AS 'Patient Number',
+			CONCAT(p.lname,' ',p.fname) AS 'Name',
+			w.MedStatus AS 'Medical Insurance Status',
+			((DATEDIFF ( p.DateDischarged , p.DateAdmitted))* c.PublicCost) AS 'Total night cost',
+            (Sum(m.MedCost)) AS 'Total Cost of Medicine',
+            (SUM(s.Fee)) AS 'Total Consultant fees',
+            ((DATEDIFF ( p.DateDischarged , p.DateAdmitted))* c.PublicCost) + Sum(m.MedCost) + SUM(s.fee) AS 'Total cost of staying in the hospital'
+From 		Patient AS p
+INNER JOIN  Charges AS c
+ON 		    p.PatientNo = c.PatientNo
+INNER JOIN  Medicine AS m
+ON 			c.PatientNo = m.PatientNo
+INNER JOIN	Consultant AS s
+ON			m.PatientNo = s.PatientNo
+INNER JOIN  Ward AS w
+ON			w.WardNo = p.WardNo
+WHERE 		w.MedStatus = 'Public'
+GROUP BY 	p.PatientNo, c.PatientNo, m.PatientNo, s.PatientNo;
+
+/* Q2 counting the amount of patients in the hospital*/
+
+SELECT	 COUNT(*) AS 'Number of patients'
+FROM 	 Patient
+ORDER BY PatientNo ASC;
+
+
+/* listing the pastients in the hospital */
+
+SELECT	 PatientNo AS 'Patient  Number',
+         CONCAT(Fname,' ',Lname) AS 'Name',
+         Address AS 'Address',
+         TelNo AS 'TelNo'
+FROM 	 Patient
+ORDER BY PatientNo ASC;
+
+/* Q3 Amount of Medicines used on a daily basis*/ 
+
+SELECT 		PrescMedName AS 'Medicine Name',
+            COUNT(*) AS 'Amount of times used',
+            PrescDate AS 'Date',
+			Sum(MedCost) AS 'Total Cost'
+FROM 		Medicine
+WHERE 		PrescDate = '2018-05-11' /*using the specific date management is looking for*/
+GROUP BY 	PrescMedName;
+
+/* Q4 consultant charges monthly*/ 
+
+Select 		StaffNo AS 'Consultant Number',
+            fee AS 'Consultant fee',
+            VisitDate AS 'Date of visit'
+FROM 		consultant
+GROUP BY 	StaffNo ASC
+ORDER BY 	VisitDate ASC;
+
+
+/* Consultant charges monthly (done by a specified month) */
+
+Select 		StaffNo AS 'Consultant Number',
+            fee AS 'Consultant fees for october'		
+FROM 		consultant
+WHERE 		VisitDate BETWEEN '2018-11-01' AND '2018-11-31'
+GROUP BY 	StaffNo; 
+
+
+/* The total cost of consultant charges monthly by specified month */
+
+Select 		StaffNo AS 'Consultant Number',
+			COUNT(VisitDate BETWEEN '2018-11-01' AND '2018-11-31') AS 'Amount of Visits',
+            SUM(fee) AS 'Total Consultant fee costs for October'		
+FROM 		Consultant		
+GROUP BY 	StaffNo;
+
+/* Q5 show all the wards and how many nurses are assigned to each */
+
+SELECT 		w.WardNo as 'ward number',
+			w.WardName AS 'Ward Name',
+			COUNT(*) AS 'Number of Nurses'
+FROM 		Staff AS s 
+INNER JOIN	Ward AS w
+ON  		s.WardNo = w.WardNo
+WHERE 		s.position = 'Nurse'
+GROUP BY 	w.WardNo ASC;
+
+/* Q5 show all the wards and The Ward Sister assigned to each */
+
+SELECT 		w.WardNo as 'Ward number', 
+			w.WardName AS 'Ward Name',
+			CONCAT(s.Fname,' ',s.Lname) AS 'Name'
+FROM 		Staff AS s 
+INNER JOIN  Ward AS w
+ON  		s.WardNo = w.WardNo
+WHERE 		s.position = 'Ward Sister'
